@@ -1,37 +1,75 @@
+#include <sys/wait.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
-void
-build()
+#define CC "cc"
+#define SOURCE "sample.c"
+#define OBJECT "sample.o"
+#define TARGET "sample"
+
+static void
+run(char *file, char *const argv[])
 {
-	system("cc -c sample.c");
-	system("cc -o sample sample.o");
+	if (!fork())
+		execvp(file, argv);
+	wait(NULL);
 }
 
-void
-clean()
+static void
+build(void)
 {
-	system("rm *.o sample");
+	char *const compile_arguments[] = {
+		CC,
+		"-c",
+		"-o",
+		OBJECT,
+		SOURCE,
+		NULL
+	};
+	char *const link_arguments[] = {
+		CC,
+		"-o",
+		TARGET,
+		OBJECT,
+		NULL
+	};
+
+	run(CC, compile_arguments);
+	run(CC, link_arguments);
 }
 
-void
-usage()
+static void
+clean(void)
+{
+	char *args[] = {
+		"rm",
+		"-f",
+		OBJECT,
+		TARGET,
+		NULL
+	};
+
+	run("rm", args);
+}
+
+static void
+usage(void)
 {
 	fprintf(stderr, "usage: ./build [clean]\n");
+	exit(1);
 }
 
 int
 main(int argc, char *argv[])
 {
-	if (argc < 2) {
+	if (argc < 2)
 		build();
-		return 0;
-	}
-	if (!strcmp(argv[1], "clean")) {
+	else if (!strcmp(argv[1], "clean"))
 		clean();
-		return 0;
-	}
-	usage();
-	return 1;
+	else
+		usage();
+	return 0;
 }
