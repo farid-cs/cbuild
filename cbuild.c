@@ -6,9 +6,13 @@
 #include <unistd.h>
 
 #define CC "cc"
-#define SOURCE "sample.c"
-#define OBJECT "sample.o"
 #define TARGET "sample"
+
+char *const units[][2] = {
+	/*  source      object  */
+	{ "sample.c", "sample.o"},
+	{ "util.c",   "util.o"  },
+};
 
 static void
 run(char *file, char *const argv[])
@@ -19,26 +23,42 @@ run(char *file, char *const argv[])
 }
 
 static void
-build(void)
+compile(void)
 {
-	char *const compile_arguments[] = {
-		CC,
-		"-c",
-		"-o",
-		OBJECT,
-		SOURCE,
-		NULL
-	};
-	char *const link_arguments[] = {
+	for (size_t i = 0; i != sizeof units / sizeof units[0]; i++) {
+		char *const compile_arguments[] = {
+			CC,
+			"-c",
+			"-o",
+			units[i][1],
+			units[i][0],
+			NULL
+		};
+
+		run(CC, compile_arguments);
+	}
+}
+
+static void
+link_objects(void)
+{
+	char *link_arguments[100] = {
 		CC,
 		"-o",
 		TARGET,
-		OBJECT,
-		NULL
 	};
 
-	run(CC, compile_arguments);
+	for (size_t i = 0; i != sizeof units / sizeof units[0]; i++)
+		link_arguments[i+3] = units[i][1];
+
 	run(CC, link_arguments);
+}
+
+static void
+build(void)
+{
+	compile();
+	link_objects();
 }
 
 static void
@@ -47,12 +67,13 @@ clean(void)
 	char *args[] = {
 		"rm",
 		"-f",
-		OBJECT,
+		units[0][1],
 		TARGET,
 		NULL
 	};
 
 	run("rm", args);
+	system("rm -f *.o");
 }
 
 static void
