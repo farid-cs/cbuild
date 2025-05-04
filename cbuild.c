@@ -5,8 +5,11 @@
 #include <string.h>
 #include <unistd.h>
 
+#define LEN(a) (sizeof (a) / sizeof (a)[0])
+
 #define CC "cc"
 #define TARGET "sample"
+
 
 char *const units[][2] = {
 	/*  source      object  */
@@ -23,10 +26,20 @@ run(char *file, char *const argv[])
 }
 
 static void
+print_command(char *const argv[])
+{
+	while (*argv) {
+		printf("%s ", *argv);
+		argv++;
+	}
+	puts("");
+}
+
+static void
 compile(void)
 {
-	for (size_t i = 0; i != sizeof units / sizeof units[0]; i++) {
-		char *const compile_arguments[] = {
+	for (size_t i = 0; i != LEN(units); i++) {
+		char *const compile_args[] = {
 			CC,
 			"-c",
 			"-o",
@@ -35,23 +48,25 @@ compile(void)
 			NULL
 		};
 
-		run(CC, compile_arguments);
+		print_command(compile_args);
+		run(CC, compile_args);
 	}
 }
 
 static void
 link_objects(void)
 {
-	char *link_arguments[100] = {
+	char *link_args[LEN(units) + 4] = {
 		CC,
 		"-o",
 		TARGET,
 	};
 
-	for (size_t i = 0; i != sizeof units / sizeof units[0]; i++)
-		link_arguments[i+3] = units[i][1];
+	for (size_t i = 0; i != LEN(units); i++)
+		link_args[i+3] = units[i][1];
 
-	run(CC, link_arguments);
+	print_command(link_args);
+	run(CC, link_args);
 }
 
 static void
@@ -64,16 +79,17 @@ build(void)
 static void
 clean(void)
 {
-	char *args[] = {
+	char *clean_args[LEN(units) + 4] = {
 		"rm",
 		"-f",
-		units[0][1],
 		TARGET,
-		NULL
 	};
 
-	run("rm", args);
-	system("rm -f *.o");
+	for (size_t i = 0; i != LEN(units); i++)
+		clean_args[i+3] = units[i][1];
+
+	print_command(clean_args);
+	run("rm", clean_args);
 }
 
 static void
